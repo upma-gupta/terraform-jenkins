@@ -1,79 +1,94 @@
-# Create the VPC
-resource "aws_vpc" "vpc" {
-  cidr_block = var.vpc_cidr
-  instance_tenancy = "default"
+resource "aws_vpc" "prod-vpc" {
+  cidr_block       = var.vpc-cidr
+
   tags = {
-    Name = "${prefix}-vpc"
+    Name = "prod-vpc"
   }
 }
 
-# Create Internet Gateway and attach it to VPC
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.vpc.id
+resource "aws_subnet" "prod-intra-subnets" {
+  vpc_id = aws_vpc.prod-vpc.id
+  count = length(var.azs)
+  cidr_block = element(var.prod-intra-subnets , count.index)
+  availability_zone = element(var.azs , count.index)
+
   tags = {
-    Name = "${prefix}-igw"
+    Name = "prod-intra-subnet-${count.index+1}"
   }
 }
-# Create EIP for NAT GW
+
+resource "aws_subnet" "prod-private-subnets" {
+  vpc_id = aws_vpc.prod-vpc.id
+  count = length(var.azs)
+  cidr_block = element(var.prod-private-subnets , count.index)
+  availability_zone = element(var.azs , count.index)
+
+  tags = {
+    Name = "prod-private-subnet-${count.index+1}"
+  }
+}
+
+resource "aws_subnet" "prod-public-subnets" {
+  vpc_id = aws_vpc.prod-vpc.id
+  count = length(var.azs)
+  cidr_block = element(var.prod-public-subnets , count.index)
+  availability_zone = element(var.azs , count.index)
+
+  tags = {
+    Name = "prod-public-subnet-${count.index+1}"
+  }
+}
+
+#IGW
+resource "aws_internet_gateway" "prod-igw" {
+  vpc_id = aws_vpc.prod-vpc.id
+
+  tags = {
+    Name = "prod-igw"
+  }
+}
+
+#route table for public subnet
+resource "aws_route_table" "prod-public-rtable" {
+  vpc_id = aws_vpc.prod-vpc.id
+
+  tags = {
+    Name = "prod-public-rtable"
+  }
+}
+
+#add routes to public-rtable this is just for testing
+resource "aws_route" "ner-subnets-public-rtable" {
+  count                     = length(var.public-subnets)
+  route_table_id            = aws_route_table.prod-public-rtable.id
+  destination_cidr_block    = element(var.public-subnets , count.index)
+  gateway_id                = aws_internet_gateway.prod-igw.id
+}
+
+#route table association public subnets
+resource "aws_route_table_association" "public-subnet-association" {
+  count          = length(var.prod-public-subnets)
+  subnet_id      = element(aws_subnet.prod-public-subnets.*.id , count.index)
+  route_table_id = aws_route_table.prod-public-rtable.id
+}
+
+EIP
 resource "aws_eip" "nat-eip" {
-  vpc = true
-}
+  count = length(var.azs)
+  vpc      = true
 
-# Create NAT Gateway
-resource "aws_nat_gateway" "natgw" {
-  subnet_id = aws_subnet.ug-public-subnet-01.id
-  allocation_id = aws_eip.nat-eip.id
-}
-
-# Create public subnets
-resource "aws_subnet" "public" {
-  count = len(var.public_subnets_cidr)
-  vpc_id = aws_vpc.vpc.id
-  cidr_block = element(var.public_subnets_cidr,count.index)
-  availability_zone = element(var.azs,count.index)
-  map_public_ip_on_launch = true
   tags = {
-    Name = "${prefix}-public-subnet-${count.index+1}"
+    Name = "EIP--${count.index+1}"
   }
 }
-# Create Private Subnet
-resource "aws_subnet" "private" {
-  count = len(var.private_subnets_cidr)
-  vpc_id = aws_vpc.vpc.id
-  cidr_block = element(var.private_subnets_cidr,count.index)
-  availability_zone = element(var.azs, count.index)
+
+NAT gateway
+resource "aws_nat_gateway" "prod-nat-gateway" {
+  count = length(var.azs)
+  allocation_id = element(aws_eip.nat-eip.*.id , count.index)
+  subnet_id     = element(aws_subnet.prod-public-subnets.*.id , count.index)
+
   tags = {
-    Name = "${prefix}-private-subnet-${count.index+1}"
+    Name = "NAT-GW--${count.index+1}"
   }
-}
-
-# Route Table for Public Subnets
-resource "aws_route_table" "public-rt" {
-  vpc_id = aws_vpc.vpc.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
-  }
-}
-
-# Route Table for Private Subnets
-resource "aws_route_table" "private-rt" {
-  vpc_id = aws_vpc.vpc.id
-  route {
-    cidr_block = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.natgw.id
-  }
-}
-
-# Route Table Association with Public Subnet
-resource "aws_route_table_association" "public-rt-asso" {
-  count = len(var.public_subnets_cidr)
-  route_table_id = aws_route_table.public-rt.id
-  subnet_id = element(aws_subnet.public.*.id, count.index)
-}
-
-# Route Table Association with Private Subnet
-resource "aws_route_table_association" "private-rt-asso" {
-  route_table_id = aws_route_table.private-rt.id
-  subnet_id = element(aws_subnet.private.*.id, count.index)
 }
