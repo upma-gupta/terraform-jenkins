@@ -2,11 +2,17 @@
 resource "aws_vpc" "ug-vpc" {
   cidr_block = var.vpc-cidr
   instance_tenancy = "default"
+  tags = {
+    Name = "ug-vpc"
+  }
 }
 
 # Create Internet Gateway and attach it to VPC
 resource "aws_internet_gateway" "ug-igw" {
   vpc_id = aws_vpc.ug-vpc.id
+  tags = {
+    Name = "ug-igw"
+  }
 }
 # Create EIP for NAT GW
 resource "aws_eip" "ug-natgw-eip" {

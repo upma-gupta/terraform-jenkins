@@ -10,9 +10,9 @@ pipeline{
         sh "terraform init"
       }
     }
-    stage('terraform apply'){
+    stage('terraform destroy'){
       steps{
-        sh returnStatus: true, script: 'terraform apply -auto-approve'
+        sh returnStatus: true, script: 'terraform destroy -auto-approve'
       }
     }
   }
