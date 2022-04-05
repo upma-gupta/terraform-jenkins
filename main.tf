@@ -72,7 +72,7 @@ resource "aws_route_table_association" "public-subnet-association" {
   route_table_id = aws_route_table.prod-public-rtable.id
 }
 
-EIP
+# EIP
 resource "aws_eip" "nat-eip" {
   count = length(var.azs)
   vpc      = true
@@ -82,7 +82,7 @@ resource "aws_eip" "nat-eip" {
   }
 }
 
-NAT gateway
+# NAT gateway
 resource "aws_nat_gateway" "prod-nat-gateway" {
   count = length(var.azs)
   allocation_id = element(aws_eip.nat-eip.*.id , count.index)
