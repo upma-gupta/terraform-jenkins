@@ -1,8 +1,6 @@
 pipeline{
   agent any
   environment {
-  #TERRAFORM_PATH = "/usr/bin/"
-  #PATH = "${PATH}:${TERRAFORM_PATH}"
   PATH = "${PATH}:${getTerraformPath()}"
 }
   stages{
