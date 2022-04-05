@@ -1,31 +1,27 @@
+# Provider
+variable "aws_region" {
+  default = "us-east-1"
+}
+
 # VPC variables
-variable "vpc-cidr" {
-  description = "VPC CIDR"
-  type = string
+variable "vpc_cidr" {
   default = "10.0.0.0/16"
 }
-variable "public-subnet-01" {
-  description = "Public Subnet 01 CIDR"
-  type = string
-  default = "10.0.0.0/24"
+variable "public_subnets_cidr" {
+  type = list
+  default = ["10.0.0.0/24", "10.1.0.0/24"]
 }
-variable "public-subnet-02" {
-  description = "Public Subnet 02 CIDR"
-  type = string
-  default = "10.1.0.0/24"
+variable "private_subnets_cidr" {
+  type = list
+  default = ["10.2.0.0/24", "10.3.0.0/24"]
 }
-variable "private-subnet-01" {
-  description = "Private Subnet 01 CIDR"
-  type = string
-  default = "10.2.0.0/24"
+variable "azs" {
+  type = list
+  default = ["us-east-1a", "us-east-1b"]
 }
-variable "private-subnet-02" {
-  description = "Private Subnet 02 CIDR"
-  type = string
-  default = "10.3.0.0/24"
+variable "prefix" {
+  default = ug
 }
-
-
 
 # EC2 variables
 variable "instance_name" {
