@@ -1,8 +1,9 @@
 pipeline{
   agent any
   environment {
-  TERRAFORM_PATH = "/usr/bin/"
-  PATH = "${PATH}:${TERRAFORM_PATH}"
+  #TERRAFORM_PATH = "/usr/bin/"
+  #PATH = "${PATH}:${TERRAFORM_PATH}"
+  PATH = "${PATH}:${getTerraformPath()}"
 }
   stages{
     stage('terraform init'){
@@ -16,4 +17,8 @@ pipeline{
       }
     }
   }
+}
+def getTerraformPath(){
+  def tfVpc = tool name: 'Terraform', type: 'terraform'
+  return tfVpc
 }
